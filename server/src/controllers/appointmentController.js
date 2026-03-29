@@ -43,3 +43,24 @@ export const getLawyerAppointments = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// ✅ NEW: Update Appointment Status (LAWYER ONLY)
+export const updateAppointmentStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    const appointment = await Appointment.findById(req.params.id);
+
+    if (!appointment) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    appointment.status = status;
+
+    const updatedAppointment = await appointment.save();
+
+    res.json(updatedAppointment);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

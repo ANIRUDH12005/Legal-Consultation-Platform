@@ -3,6 +3,7 @@ import {
   bookAppointment,
   getUserAppointments,
   getLawyerAppointments,
+  updateAppointmentStatus,
 } from "../controllers/appointmentController.js";
 
 import { protect, authorizeRoles } from "../middleware/authMiddleware.js";
@@ -17,5 +18,8 @@ router.get("/user", protect, authorizeRoles("user"), getUserAppointments);
 
 // Lawyer view appointments
 router.get("/lawyer", protect, authorizeRoles("lawyer"), getLawyerAppointments);
+
+// ✅ Lawyer updates status
+router.put("/:id", protect, authorizeRoles("lawyer"), updateAppointmentStatus);
 
 export default router;
