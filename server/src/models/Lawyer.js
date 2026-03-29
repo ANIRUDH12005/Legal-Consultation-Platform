@@ -26,6 +26,10 @@ const lawyerSchema = new mongoose.Schema(
     bio: {
       type: String,
     },
+    isApproved: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

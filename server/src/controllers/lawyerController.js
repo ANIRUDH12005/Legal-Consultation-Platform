@@ -28,7 +28,7 @@ export const getAllLawyers = async (req, res) => {
   try {
     const { specialization, location, minExperience, maxFees } = req.query;
 
-    let filter = {};
+    let filter = { isApproved: true };
 
     if (specialization) {
       filter.specialization = { $regex: specialization, $options: "i" };

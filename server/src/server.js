@@ -8,6 +8,7 @@ import testRoutes from "./routes/testRoutes.js";
 import lawyerRoutes from "./routes/lawyerRoutes.js";
 import appointmentRoutes from "./routes/appointmentRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -27,6 +28,7 @@ app.use("/api/test", testRoutes);
 app.use("/api/lawyers", lawyerRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Server
 const PORT = process.env.PORT || 5000;
