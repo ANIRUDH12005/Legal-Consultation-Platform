@@ -22,10 +22,31 @@ export const createLawyerProfile = async (req, res) => {
 
 // Get All Lawyers
 import Review from "../models/Review.js";
+import Lawyer from "../models/Lawyer.js";
 
 export const getAllLawyers = async (req, res) => {
   try {
-    const lawyers = await Lawyer.find().populate("user", "name email");
+    const { specialization, location, minExperience, maxFees } = req.query;
+
+    let filter = {};
+
+    if (specialization) {
+      filter.specialization = { $regex: specialization, $options: "i" };
+    }
+
+    if (location) {
+      filter.location = { $regex: location, $options: "i" };
+    }
+
+    if (minExperience) {
+      filter.experience = { $gte: Number(minExperience) };
+    }
+
+    if (maxFees) {
+      filter.fees = { $lte: Number(maxFees) };
+    }
+
+    const lawyers = await Lawyer.find(filter).populate("user", "name email");
 
     const lawyersWithRatings = await Promise.all(
       lawyers.map(async (lawyer) => {
