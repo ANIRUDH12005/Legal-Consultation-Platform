@@ -1,15 +1,24 @@
 import Appointment from "../models/Appointment.js";
 
 // Book Appointment
+import Lawyer from "../models/Lawyer.js";
+
 export const bookAppointment = async (req, res) => {
   try {
     const { lawyerId, date, time } = req.body;
+
+    const lawyer = await Lawyer.findById(lawyerId);
+
+    if (!lawyer) {
+      return res.status(404).json({ message: "Lawyer not found" });
+    }
 
     const appointment = await Appointment.create({
       user: req.user._id,
       lawyer: lawyerId,
       date,
       time,
+      fees: lawyer.fees, //  store fees
     });
 
     res.status(201).json(appointment);
@@ -44,7 +53,7 @@ export const getLawyerAppointments = async (req, res) => {
   }
 };
 
-// ✅ NEW: Update Appointment Status (LAWYER ONLY)
+//  NEW: Update Appointment Status (LAWYER ONLY)
 export const updateAppointmentStatus = async (req, res) => {
   try {
     const { status } = req.body;

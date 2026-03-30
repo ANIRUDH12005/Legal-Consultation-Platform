@@ -20,6 +20,10 @@ const appointmentSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    fees: {
+      type: Number,
+      default: 0,
+    },
     status: {
       type: String,
       enum: ["pending", "accepted", "rejected"],

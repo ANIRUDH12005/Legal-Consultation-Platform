@@ -1,5 +1,3 @@
-import Lawyer from "../models/Lawyer.js";
-
 // Create Lawyer Profile
 export const createLawyerProfile = async (req, res) => {
   try {
