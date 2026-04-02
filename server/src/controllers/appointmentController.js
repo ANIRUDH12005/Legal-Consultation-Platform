@@ -31,8 +31,15 @@ export const bookAppointment = async (req, res) => {
 export const getUserAppointments = async (req, res) => {
   try {
     const appointments = await Appointment.find({ user: req.user._id })
-      .populate("lawyer")
-      .populate("user", "name email");
+      .populate({
+        path: "lawyer",
+        populate: {
+          path: "user",
+          select: "name email",
+        },
+      })
+      .populate("user", "name email")
+      .sort({ createdAt: -1 });
 
     res.json(appointments);
   } catch (error) {
@@ -43,9 +50,23 @@ export const getUserAppointments = async (req, res) => {
 // Get Lawyer Appointments
 export const getLawyerAppointments = async (req, res) => {
   try {
-    const appointments = await Appointment.find()
+    // Find the lawyer profile for the current user
+    const lawyer = await Lawyer.findOne({ user: req.user._id });
+
+    if (!lawyer) {
+      return res.status(404).json({ message: "Lawyer profile not found" });
+    }
+
+    const appointments = await Appointment.find({ lawyer: lawyer._id })
       .populate("user", "name email")
-      .populate("lawyer");
+      .populate({
+        path: "lawyer",
+        populate: {
+          path: "user",
+          select: "name email",
+        },
+      })
+      .sort({ createdAt: -1 });
 
     res.json(appointments);
   } catch (error) {

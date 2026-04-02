@@ -282,7 +282,7 @@ function LawyerProfileContent({ params }: { params: Promise<{ id: string }> }) {
                     <GraduationCap className="mt-0.5 h-5 w-5 text-primary" />
                     <div>
                       <p className="font-medium text-card-foreground">Education</p>
-                      <p className="text-sm text-muted-foreground">{lawyer.education}</p>
+                      <p className="text-sm text-muted-foreground">{lawyer.education || "Information not available"}</p>
                     </div>
                   </div>
 
@@ -290,7 +290,9 @@ function LawyerProfileContent({ params }: { params: Promise<{ id: string }> }) {
                     <Languages className="mt-0.5 h-5 w-5 text-primary" />
                     <div>
                       <p className="font-medium text-card-foreground">Languages</p>
-                      <p className="text-sm text-muted-foreground">{lawyer.languages.join(", ")}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {Array.isArray(lawyer.languages) ? lawyer.languages.join(", ") : "English, Hindi"}
+                      </p>
                     </div>
                   </div>
 

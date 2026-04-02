@@ -18,7 +18,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Search, SlidersHorizontal, X, MapPin } from "lucide-react"
 import { toast } from "sonner"
-import { dummyLawyers } from "@/data/lawyers"
+import API from "@/services/api"
 
 function LawyersContent() {
   const searchParams = useSearchParams()
@@ -36,42 +36,19 @@ function LawyersContent() {
   
   const [showFilters, setShowFilters] = useState(false)
 
-  const fetchLawyersSimulated = async () => {
+  const fetchLawyers = async () => {
     setLoading(true)
     setError(null)
     
-    // 1.5s delay simulation
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-
     try {
-      // Frontend-only filtering logic
-      let filtered = [...dummyLawyers]
+      const params: any = {}
+      if (specialization) params.specialization = specialization
+      if (location) params.location = location
+      if (minExperience) params.minExperience = minExperience
+      if (maxFees) params.maxFees = maxFees
 
-      if (specialization) {
-        filtered = filtered.filter(l => 
-          l.specialization.toLowerCase().includes(specialization.toLowerCase())
-        )
-      }
-
-      if (location) {
-        filtered = filtered.filter(l => 
-          l.location.toLowerCase().includes(location.toLowerCase())
-        )
-      }
-
-      if (minExperience) {
-        filtered = filtered.filter(l => 
-          l.experience >= Number(minExperience)
-        )
-      }
-
-      if (maxFees) {
-        filtered = filtered.filter(l => 
-          l.fees <= Number(maxFees)
-        )
-      }
-
-      setLawyersList(filtered)
+      const response = await API.get('/lawyers', { params })
+      setLawyersList(response.data)
       
       // Update URL without refreshing
       const urlParams = new URLSearchParams()
@@ -84,8 +61,8 @@ function LawyersContent() {
       window.history.pushState({}, '', newUrl)
     } catch (err: any) {
       console.error("Filter error:", err)
-      setError("An error occurred while filtering data.")
-      toast.error("An error occurred")
+      setError("Failed to load lawyers. Please try again.")
+      toast.error("An error occurred while fetching lawyers")
     } finally {
       setLoading(false)
     }
@@ -94,7 +71,7 @@ function LawyersContent() {
   // Fetch on mount and when filters change (debounced for inputs)
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchLawyersSimulated()
+      fetchLawyers()
     }, 500)
     return () => clearTimeout(timer)
   }, [specialization, location, minExperience, maxFees])

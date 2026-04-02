@@ -217,7 +217,10 @@ export default function DashboardPage() {
                     <div className="flex flex-col gap-4">
                       {upcomingAppointments.map((appointment: any) => {
                         const status = statusConfig[appointment.status as keyof typeof statusConfig] || statusConfig.pending
-                        const displayName = user.role === 'lawyer' ? appointment.userName : appointment.lawyerName
+                        // Data from populated backend objects
+                        const clientName = appointment.user?.name || "Unknown Client"
+                        const lawyerName = appointment.lawyer?.user?.name || "Unknown Lawyer"
+                        const displayName = user.role === 'lawyer' ? clientName : lawyerName
                         
                         return (
                           <div
@@ -305,7 +308,10 @@ export default function DashboardPage() {
                     <div className="flex flex-col gap-4">
                       {pastAppointments.map((appointment: any) => {
                         const status = statusConfig[appointment.status as keyof typeof statusConfig] || statusConfig.pending
-                        const displayName = user.role === 'lawyer' ? appointment.userName : appointment.lawyerName
+                        // Data from populated backend objects
+                        const clientName = appointment.user?.name || "Unknown Client"
+                        const lawyerName = appointment.lawyer?.user?.name || "Unknown Lawyer"
+                        const displayName = user.role === 'lawyer' ? clientName : lawyerName
                         
                         return (
                           <div
