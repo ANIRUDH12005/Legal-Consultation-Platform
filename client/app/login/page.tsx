@@ -7,13 +7,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Scale, Eye, EyeOff } from "lucide-react"
+import { Scale, Eye, EyeOff, Loader2 } from "lucide-react"
 import API from "@/services/api"
 import { useAuth } from "@/context/AuthContext"
 import { toast } from "sonner"
 
 export default function LoginPage() {
   const { login } = useAuth()
+  const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
@@ -33,8 +34,6 @@ export default function LoginPage() {
     
     if (!formData.password) {
       newErrors.password = "Password is required"
-    } else if (formData.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters"
     }
     
     setErrors(newErrors)
@@ -49,9 +48,19 @@ export default function LoginPage() {
     setIsLoading(true)
     try {
       const response = await API.post('/auth/login', formData)
-      const { token, user } = response.data
-      login(token, user)
+      const { token, ...userData } = response.data
+      
+      if (!token || !userData._id) {
+        throw new Error("Invalid response from server")
+      }
+
+      // login() stores in localStorage and updates global state
+      login(token, userData as any)
+      
+      // router.push is already handled in Context, but being explicit doesn't hurt
+      router.refresh()
     } catch (error: any) {
+      console.error('Login error:', error)
       const message = error.response?.data?.message || 'Login failed. Please check your credentials.'
       toast.error(message)
     } finally {
@@ -60,20 +69,20 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">
-      <Link href="/" className="mb-8 flex items-center gap-2">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/30 px-4 py-12">
+      <Link href="/" className="mb-8 flex items-center gap-2 transition-opacity hover:opacity-80">
         <Scale className="h-8 w-8 text-primary" />
         <span className="text-2xl font-bold text-foreground">LegalConnect</span>
       </Link>
 
-      <Card className="w-full max-w-md border-border">
-        <CardHeader className="text-center">
+      <Card className="w-full max-w-md border-border shadow-lg">
+        <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
           <CardDescription>Enter your credentials to access your account</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
@@ -81,17 +90,18 @@ export default function LoginPage() {
                 placeholder="you@example.com"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className={errors.email ? "border-destructive" : ""}
+                className={errors.email ? "border-destructive focus-visible:ring-destructive" : ""}
+                autoComplete="email"
               />
               {errors.email && (
-                <p className="text-sm text-destructive">{errors.email}</p>
+                <p className="text-xs text-destructive">{errors.email}</p>
               )}
             </div>
 
-            <div className="flex flex-col gap-2">
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <Link href="#" className="text-sm text-primary hover:underline">
+                <Link href="#" className="text-xs font-medium text-primary hover:underline">
                   Forgot password?
                 </Link>
               </div>
@@ -99,10 +109,11 @@ export default function LoginPage() {
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
+                  placeholder="••••••••"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   className={errors.password ? "border-destructive pr-10" : "pr-10"}
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
@@ -113,21 +124,26 @@ export default function LoginPage() {
                 </button>
               </div>
               {errors.password && (
-                <p className="text-sm text-destructive">{errors.password}</p>
+                <p className="text-xs text-destructive">{errors.password}</p>
               )}
             </div>
 
-            <Button type="submit" className="mt-2 w-full" disabled={isLoading}>
-              {isLoading ? "Signing in..." : "Sign in"}
+            <Button type="submit" className="w-full py-6 text-base" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Signing in...
+                </>
+              ) : "Sign In"}
             </Button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-muted-foreground">
+          <p className="mt-6 text-center text-sm text-muted-foreground">
             {"Don't have an account? "}
-            <Link href="/register" className="font-medium text-primary hover:underline">
+            <Link href="/register" className="font-semibold text-primary hover:underline">
               Create one
             </Link>
-          </div>
+          </p>
         </CardContent>
       </Card>
     </div>

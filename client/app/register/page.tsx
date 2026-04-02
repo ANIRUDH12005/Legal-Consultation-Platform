@@ -9,13 +9,12 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Scale, Eye, EyeOff, User, Briefcase } from "lucide-react"
 import API from "@/services/api"
-import { useAuth } from "@/context/AuthContext"
 import { toast } from "sonner"
 
 type UserRole = "user" | "lawyer"
 
 export default function RegisterPage() {
-  const { login } = useAuth()
+  const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [role, setRole] = useState<UserRole>("user")
@@ -81,9 +80,9 @@ export default function RegisterPage() {
         ...formData,
         role: role
       }
-      const response = await API.post('/auth/register', registrationData)
-      const { token, user } = response.data
-      login(token, user)
+      await API.post('/auth/register', registrationData)
+      toast.success('Registration successful! Please login.')
+      router.push('/login')
     } catch (error: any) {
       const message = error.response?.data?.message || 'Registration failed. Please try again.'
       toast.error(message)
@@ -93,26 +92,25 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">
-      <Link href="/" className="mb-8 flex items-center gap-2">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/30 px-4 py-12">
+      <Link href="/" className="mb-8 flex items-center gap-2 transition-opacity hover:opacity-80">
         <Scale className="h-8 w-8 text-primary" />
         <span className="text-2xl font-bold text-foreground">LegalConnect</span>
       </Link>
 
-      <Card className="w-full max-w-md border-border">
-        <CardHeader className="text-center">
+      <Card className="w-full max-w-md border-border shadow-lg">
+        <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
           <CardDescription>Join LegalConnect to find verified legal help</CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Role Selection */}
           <div className="mb-6 flex gap-3">
             <button
               type="button"
               onClick={() => setRole("user")}
-              className={`flex flex-1 flex-col items-center gap-2 rounded-lg border-2 p-4 transition-colors ${
+              className={`flex flex-1 flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${
                 role === "user"
-                  ? "border-primary bg-primary/5"
+                  ? "border-primary bg-primary/5 ring-1 ring-primary"
                   : "border-border hover:border-primary/50"
               }`}
             >
@@ -124,9 +122,9 @@ export default function RegisterPage() {
             <button
               type="button"
               onClick={() => setRole("lawyer")}
-              className={`flex flex-1 flex-col items-center gap-2 rounded-lg border-2 p-4 transition-colors ${
+              className={`flex flex-1 flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${
                 role === "lawyer"
-                  ? "border-primary bg-primary/5"
+                  ? "border-primary bg-primary/5 ring-1 ring-primary"
                   : "border-border hover:border-primary/50"
               }`}
             >
@@ -137,23 +135,20 @@ export default function RegisterPage() {
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
               <Input
                 id="name"
-                type="text"
                 placeholder="John Doe"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className={errors.name ? "border-destructive" : ""}
+                className={errors.name ? "border-destructive focus-visible:ring-destructive" : ""}
               />
-              {errors.name && (
-                <p className="text-sm text-destructive">{errors.name}</p>
-              )}
+              {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
             </div>
 
-            <div className="flex flex-col gap-2">
+            <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
@@ -161,69 +156,51 @@ export default function RegisterPage() {
                 placeholder="you@example.com"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className={errors.email ? "border-destructive" : ""}
+                className={errors.email ? "border-destructive focus-visible:ring-destructive" : ""}
               />
-              {errors.email && (
-                <p className="text-sm text-destructive">{errors.email}</p>
-              )}
+              {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
             </div>
 
             {role === "lawyer" && (
-              <>
-                <div className="flex flex-col gap-2">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
                   <Label htmlFor="specialization">Specialization</Label>
                   <Input
                     id="specialization"
-                    type="text"
-                    placeholder="e.g., Corporate Law, Family Law"
+                    placeholder="e.g. Criminal"
                     value={formData.specialization}
                     onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
-                    className={errors.specialization ? "border-destructive" : ""}
                   />
-                  {errors.specialization && (
-                    <p className="text-sm text-destructive">{errors.specialization}</p>
-                  )}
                 </div>
-
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="experience">Years of Experience</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="experience">Experience (Years)</Label>
                   <Input
                     id="experience"
                     type="number"
-                    placeholder="e.g., 5"
+                    placeholder="5"
                     value={formData.experience}
                     onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
-                    className={errors.experience ? "border-destructive" : ""}
                   />
-                  {errors.experience && (
-                    <p className="text-sm text-destructive">{errors.experience}</p>
-                  )}
                 </div>
-
-                <div className="flex flex-col gap-2">
+                <div className="col-span-2 space-y-2">
                   <Label htmlFor="barNumber">Bar Registration Number</Label>
                   <Input
                     id="barNumber"
-                    type="text"
-                    placeholder="Enter your bar number"
+                    placeholder="BAR-XXXXX"
                     value={formData.barNumber}
                     onChange={(e) => setFormData({ ...formData, barNumber: e.target.value })}
-                    className={errors.barNumber ? "border-destructive" : ""}
                   />
-                  {errors.barNumber && (
-                    <p className="text-sm text-destructive">{errors.barNumber}</p>
-                  )}
                 </div>
-              </>
+              </div>
             )}
 
-            <div className="flex flex-col gap-2">
+            <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <div className="relative">
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Create a password"
+                  placeholder="••••••••"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   className={errors.password ? "border-destructive pr-10" : "pr-10"}
@@ -236,37 +213,33 @@ export default function RegisterPage() {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-              {errors.password && (
-                <p className="text-sm text-destructive">{errors.password}</p>
-              )}
+              {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
             </div>
 
-            <div className="flex flex-col gap-2">
+            <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm Password</Label>
               <Input
                 id="confirmPassword"
                 type="password"
-                placeholder="Confirm your password"
+                placeholder="••••••••"
                 value={formData.confirmPassword}
                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                 className={errors.confirmPassword ? "border-destructive" : ""}
               />
-              {errors.confirmPassword && (
-                <p className="text-sm text-destructive">{errors.confirmPassword}</p>
-              )}
+              {errors.confirmPassword && <p className="text-xs text-destructive">{errors.confirmPassword}</p>}
             </div>
 
-            <Button type="submit" className="mt-2 w-full" disabled={isLoading}>
-              {isLoading ? "Creating account..." : "Create account"}
+            <Button type="submit" className="w-full py-6 text-base" disabled={isLoading}>
+              {isLoading ? "Creating account..." : "Create Account"}
             </Button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-muted-foreground">
+          <p className="mt-6 text-center text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link href="/login" className="font-medium text-primary hover:underline">
+            <Link href="/login" className="font-semibold text-primary hover:underline">
               Sign in
             </Link>
-          </div>
+          </p>
         </CardContent>
       </Card>
     </div>
