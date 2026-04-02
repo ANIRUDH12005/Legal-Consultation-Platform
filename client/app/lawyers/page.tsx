@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, Suspense, useEffect } from "react"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { LawyerCard } from "@/components/lawyer-card"
@@ -16,65 +16,97 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Search, SlidersHorizontal, X } from "lucide-react"
-import API from "@/services/api"
+import { Search, SlidersHorizontal, X, MapPin } from "lucide-react"
 import { toast } from "sonner"
-import { Lawyer, specializations, locations } from "@/lib/data"
+import { dummyLawyers } from "@/data/lawyers"
 
 function LawyersContent() {
   const searchParams = useSearchParams()
-  const initialSpecialization = searchParams.get("specialization") || ""
-  const initialLocation = searchParams.get("location") || ""
-
-  const [lawyersList, setLawyersList] = useState<Lawyer[]>([])
+  const router = useRouter()
+  
+  const [lawyersList, setLawyersList] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState("")
-  const [specialization, setSpecialization] = useState(initialSpecialization)
-  const [location, setLocation] = useState(initialLocation)
-  const [experience, setExperience] = useState("")
-  const [maxFees, setMaxFees] = useState("")
+  const [error, setError] = useState<string | null>(null)
+
+  // Local state for filters
+  const [specialization, setSpecialization] = useState(searchParams.get("specialization") || "")
+  const [location, setLocation] = useState(searchParams.get("location") || "")
+  const [minExperience, setMinExperience] = useState(searchParams.get("minExperience") || "")
+  const [maxFees, setMaxFees] = useState(searchParams.get("maxFees") || "")
+  
   const [showFilters, setShowFilters] = useState(false)
 
-  const fetchLawyers = async () => {
+  const fetchLawyersSimulated = async () => {
     setLoading(true)
-    try {
-      const params: any = {}
-      if (search) params.search = search
-      if (specialization && specialization !== 'all') params.specialization = specialization
-      if (location && location !== 'all') params.location = location
-      if (experience && experience !== 'all') params.experience = experience
-      if (maxFees) params.maxFees = maxFees
+    setError(null)
+    
+    // 1.5s delay simulation
+    await new Promise((resolve) => setTimeout(resolve, 1500))
 
-      const response = await API.get('/lawyers', { params })
-      setLawyersList(response.data)
-    } catch (error) {
-      console.error("Error fetching lawyers:", error)
-      toast.error("Failed to fetch lawyers")
+    try {
+      // Frontend-only filtering logic
+      let filtered = [...dummyLawyers]
+
+      if (specialization) {
+        filtered = filtered.filter(l => 
+          l.specialization.toLowerCase().includes(specialization.toLowerCase())
+        )
+      }
+
+      if (location) {
+        filtered = filtered.filter(l => 
+          l.location.toLowerCase().includes(location.toLowerCase())
+        )
+      }
+
+      if (minExperience) {
+        filtered = filtered.filter(l => 
+          l.experience >= Number(minExperience)
+        )
+      }
+
+      if (maxFees) {
+        filtered = filtered.filter(l => 
+          l.fees <= Number(maxFees)
+        )
+      }
+
+      setLawyersList(filtered)
+      
+      // Update URL without refreshing
+      const urlParams = new URLSearchParams()
+      if (specialization) urlParams.set("specialization", specialization)
+      if (location) urlParams.set("location", location)
+      if (minExperience) urlParams.set("minExperience", minExperience)
+      if (maxFees) urlParams.set("maxFees", maxFees)
+      
+      const newUrl = `${window.location.pathname}?${urlParams.toString()}`
+      window.history.pushState({}, '', newUrl)
+    } catch (err: any) {
+      console.error("Filter error:", err)
+      setError("An error occurred while filtering data.")
+      toast.error("An error occurred")
     } finally {
       setLoading(false)
     }
   }
 
+  // Fetch on mount and when filters change (debounced for inputs)
   useEffect(() => {
-    fetchLawyers()
-  }, [specialization, location, experience, maxFees])
-
-  // Call fetch on search submit or debounce
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    fetchLawyers()
-  }
+    const timer = setTimeout(() => {
+      fetchLawyersSimulated()
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [specialization, location, minExperience, maxFees])
 
   const clearFilters = () => {
-    setSearch("")
     setSpecialization("")
     setLocation("")
-    setExperience("")
+    setMinExperience("")
     setMaxFees("")
-    // Fetch will be triggered by useEffect for dropdowns, but for search we might need manual trigger
   }
 
-  const hasFilters = search || specialization || location || experience || maxFees
+  const hasFilters = specialization || location || minExperience || maxFees
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -82,35 +114,11 @@ function LawyersContent() {
       <main className="flex-1 bg-background py-8">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
-            <h1 className="mb-2 text-3xl font-bold text-foreground">Find a Lawyer</h1>
+            <h1 className="mb-2 text-3xl font-bold text-foreground">Find a Lawyer (Demo Mode)</h1>
             <p className="text-muted-foreground">
-              Browse through our network of verified legal professionals
+              Explore our verified network of legal professionals using static test data.
             </p>
           </div>
-
-          {/* Search Bar */}
-          <form onSubmit={handleSearchSubmit} className="mb-6 flex flex-col gap-4 sm:flex-row">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Search by name or specialization..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="h-12 pl-10"
-              />
-            </div>
-            <Button type="submit">Search</Button>
-            <Button
-              variant="outline"
-              type="button"
-              className="h-12 gap-2 lg:hidden"
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <SlidersHorizontal className="h-4 w-4" />
-              Filters
-            </Button>
-          </form>
 
           <div className="flex flex-col gap-8 lg:flex-row">
             {/* Filters Sidebar */}
@@ -119,7 +127,7 @@ function LawyersContent() {
                 showFilters ? "block" : "hidden"
               }`}
             >
-              <Card className="sticky top-24 border-border">
+              <Card className="sticky top-24 border-border shadow-sm">
                 <CardHeader className="flex flex-row items-center justify-between pb-4">
                   <CardTitle className="text-lg">Filters</CardTitle>
                   {hasFilters && (
@@ -127,7 +135,7 @@ function LawyersContent() {
                       variant="ghost"
                       size="sm"
                       onClick={clearFilters}
-                      className="h-8 gap-1 text-sm"
+                      className="h-8 gap-1 text-sm text-primary"
                     >
                       <X className="h-3 w-3" />
                       Clear all
@@ -136,62 +144,57 @@ function LawyersContent() {
                 </CardHeader>
                 <CardContent className="flex flex-col gap-5">
                   <div className="flex flex-col gap-2">
-                    <Label>Specialization</Label>
-                    <Select value={specialization} onValueChange={setSpecialization}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="All specializations" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All specializations</SelectItem>
-                        {specializations.map((spec) => (
-                          <SelectItem key={spec} value={spec}>
-                            {spec}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="specialization">Specialization</Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        id="specialization"
+                        placeholder="e.g. Criminal"
+                        value={specialization}
+                        onChange={(e) => setSpecialization(e.target.value)}
+                        className="pl-9"
+                      />
+                    </div>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <Label>Location</Label>
-                    <Select value={location} onValueChange={setLocation}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="All locations" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All locations</SelectItem>
-                        {locations.map((loc) => (
-                          <SelectItem key={loc} value={loc}>
-                            {loc}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="location">Location</Label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        id="location"
+                        placeholder="e.g. Delhi"
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                        className="pl-9"
+                      />
+                    </div>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <Label>Experience</Label>
-                    <Select value={experience} onValueChange={setExperience}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Any experience" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Any experience</SelectItem>
-                        <SelectItem value="0-5">0-5 years</SelectItem>
-                        <SelectItem value="5-10">5-10 years</SelectItem>
-                        <SelectItem value="10+">10+ years</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <Label>Max Fees (per consultation)</Label>
+                    <Label htmlFor="experience">Min Experience (Years)</Label>
                     <Input
+                      id="experience"
                       type="number"
-                      placeholder="e.g., 200"
-                      value={maxFees}
-                      onChange={(e) => setMaxFees(e.target.value)}
+                      placeholder="e.g. 5"
+                      value={minExperience}
+                      onChange={(e) => setMinExperience(e.target.value)}
                     />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="maxFees">Max Fees per Session</Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">₹</span>
+                      <Input
+                        id="maxFees"
+                        type="number"
+                        placeholder="e.g. 5000"
+                        value={maxFees}
+                        onChange={(e) => setMaxFees(e.target.value)}
+                        className="pl-8"
+                      />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -201,33 +204,55 @@ function LawyersContent() {
             <div className="flex-1">
               <div className="mb-4 flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
-                  Showing {lawyersList.length} lawyer{lawyersList.length !== 1 ? "s" : ""}
+                  {loading ? "Searching..." : `Showing ${lawyersList.length} lawyer${lawyersList.length !== 1 ? "s" : ""}`}
                 </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="lg:hidden"
+                  onClick={() => setShowFilters(!showFilters)}
+                >
+                  <SlidersHorizontal className="mr-2 h-4 w-4" />
+                  Filters
+                </Button>
               </div>
 
               {loading ? (
-                <div className="flex flex-col gap-4">
-                  {[1, 2, 3].map((i) => (
-                    <Card key={i} className="h-48 animate-pulse bg-muted/50" />
+                <div className="grid grid-cols-1 gap-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <Card key={i} className="h-40 animate-pulse bg-muted/30" />
                   ))}
                 </div>
+              ) : error ? (
+                <Card className="border-destructive/20 bg-destructive/5">
+                  <CardContent className="flex flex-col items-center justify-center py-12 text-center text-destructive">
+                    <p className="mb-2 font-semibold">Error</p>
+                    <p>{error}</p>
+                    <Button variant="outline" className="mt-4" onClick={fetchLawyersSimulated}>
+                      Try Again
+                    </Button>
+                  </CardContent>
+                </Card>
               ) : lawyersList.length > 0 ? (
-                <div className="flex flex-col gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   {lawyersList.map((lawyer: any) => (
-                    <LawyerCard key={lawyer._id || lawyer.id} lawyer={lawyer} />
+                    <LawyerCard key={lawyer._id} lawyer={lawyer} />
                   ))}
                 </div>
               ) : (
                 <Card className="border-border">
-                  <CardContent className="flex flex-col items-center justify-center py-12">
-                    <p className="mb-2 text-lg font-medium text-card-foreground">
+                  <CardContent className="flex flex-col items-center justify-center py-16">
+                    <div className="mb-4 rounded-full bg-muted p-4 text-muted-foreground">
+                      <Search className="h-8 w-8" />
+                    </div>
+                    <p className="mb-2 text-xl font-semibold text-foreground">
                       No lawyers found
                     </p>
-                    <p className="mb-4 text-muted-foreground">
-                      Try adjusting your filters or search terms
+                    <p className="mb-6 text-muted-foreground">
+                      No static data matches your current criteria.
                     </p>
                     <Button variant="outline" onClick={clearFilters}>
-                      Clear filters
+                      Clear all filters
                     </Button>
                   </CardContent>
                 </Card>
@@ -243,7 +268,7 @@ function LawyersContent() {
 
 export default function LawyersPage() {
   return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading...</div>}>
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div></div>}>
       <LawyersContent />
     </Suspense>
   )

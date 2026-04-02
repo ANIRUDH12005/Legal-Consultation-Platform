@@ -98,6 +98,8 @@ function ReviewForm({ lawyerId, onReviewSubmitted }: { lawyerId: string, onRevie
   )
 }
 
+import { dummyLawyers } from "@/data/lawyers"
+
 function LawyerProfileContent({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
   const searchParams = useSearchParams()
@@ -105,7 +107,7 @@ function LawyerProfileContent({ params }: { params: Promise<{ id: string }> }) {
   
   const { user } = useAuth()
   
-  const [lawyer, setLawyer] = useState<Lawyer | null>(null)
+  const [lawyer, setLawyer] = useState<any | null>(null)
   const [lawyerReviews, setLawyerReviews] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [isBookingOpen, setIsBookingOpen] = useState(showBooking)
@@ -113,12 +115,25 @@ function LawyerProfileContent({ params }: { params: Promise<{ id: string }> }) {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const [lawyerRes, reviewsRes] = await Promise.all([
-        API.get(`/lawyers/${resolvedParams.id}`),
-        API.get(`/reviews/${resolvedParams.id}`)
-      ])
-      setLawyer(lawyerRes.data)
-      setLawyerReviews(reviewsRes.data)
+      // Try API first
+      try {
+        const [lawyerRes, reviewsRes] = await Promise.all([
+          API.get(`/lawyers/${resolvedParams.id}`),
+          API.get(`/reviews/${resolvedParams.id}`)
+        ])
+        setLawyer(lawyerRes.data)
+        setLawyerReviews(reviewsRes.data)
+      } catch (apiErr) {
+        console.warn("API failed, falling back to dummy data")
+        // Fallback to dummy data
+        const dummy = dummyLawyers.find(l => l._id === resolvedParams.id)
+        if (dummy) {
+          setLawyer(dummy)
+          setLawyerReviews([]) // No dummy reviews for now
+        } else {
+          throw new Error("Lawyer not found in dummy data")
+        }
+      }
     } catch (error) {
       console.error("Error fetching lawyer details:", error)
       toast.error("Failed to load lawyer details")
@@ -139,6 +154,10 @@ function LawyerProfileContent({ params }: { params: Promise<{ id: string }> }) {
     notFound()
   }
 
+  const lawyerName = (lawyer as any).user?.name || lawyer.name
+  const rating = (lawyer as any).avgRating || lawyer.rating || 0
+  const totalReviews = (lawyer as any).totalReviews || lawyer.reviewCount || 0
+
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
@@ -152,21 +171,21 @@ function LawyerProfileContent({ params }: { params: Promise<{ id: string }> }) {
                 <CardContent className="p-6">
                   <div className="flex flex-col gap-6 sm:flex-row">
                     <div className="flex h-32 w-32 shrink-0 items-center justify-center rounded-full bg-primary/10 text-4xl font-bold text-primary">
-                      {lawyer.name.split(" ").map((n) => n[0]).join("")}
+                      {lawyerName.split(" ").map((n: string) => n[0]).join("")}
                     </div>
 
                     <div className="flex-1">
                       <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
                         <div>
-                          <h1 className="text-2xl font-bold text-card-foreground">{lawyer.name}</h1>
+                          <h1 className="text-2xl font-bold text-card-foreground">{lawyerName}</h1>
                           <Badge variant="secondary" className="mt-2">
                             {lawyer.specialization}
                           </Badge>
                         </div>
                         <div className="flex items-center gap-1 rounded-full bg-accent/10 px-3 py-1.5">
                           <Star className="h-5 w-5 fill-accent text-accent" />
-                          <span className="font-semibold text-foreground">{lawyer.rating}</span>
-                          <span className="text-muted-foreground">({lawyer.reviewCount} reviews)</span>
+                          <span className="font-semibold text-foreground">{rating.toFixed(1)}</span>
+                          <span className="text-muted-foreground">({totalReviews} reviews)</span>
                         </div>
                       </div>
 
@@ -181,7 +200,7 @@ function LawyerProfileContent({ params }: { params: Promise<{ id: string }> }) {
                         </div>
                         <div className="flex items-center gap-1.5">
                           <DollarSign className="h-4 w-4" />
-                          <span>${lawyer.fees}/consultation</span>
+                          <span>₹{lawyer.fees}/consultation</span>
                         </div>
                       </div>
 
@@ -287,7 +306,7 @@ function LawyerProfileContent({ params }: { params: Promise<{ id: string }> }) {
 
                   <div>
                     <p className="mb-2 font-medium text-card-foreground">Consultation Fee</p>
-                    <p className="text-3xl font-bold text-primary">${lawyer.fees}</p>
+                    <p className="text-3xl font-bold text-primary">₹{lawyer.fees}</p>
                     <p className="text-sm text-muted-foreground">per session</p>
                   </div>
 
