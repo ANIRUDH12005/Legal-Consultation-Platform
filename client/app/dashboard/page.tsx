@@ -276,8 +276,15 @@ export default function DashboardPage() {
                                 </div>
                               )}
                               {appointment.status === "accepted" && (
-                                <Button size="sm">
-                                  {appointment.type === "video" ? "Join Call" : "View Details"}
+                                <Button size="sm" asChild={appointment.type === "video"}>
+                                  {appointment.type === "video" ? (
+                                    <Link href={`/video/${appointment._id}`}>
+                                      <Video className="mr-2 h-4 w-4" />
+                                      Join Call
+                                    </Link>
+                                  ) : (
+                                    <span>View Details</span>
+                                  )}
                                 </Button>
                               )}
                             </div>
