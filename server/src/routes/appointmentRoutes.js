@@ -4,6 +4,7 @@ import {
   getUserAppointments,
   getLawyerAppointments,
   updateAppointmentStatus,
+  getAppointmentById,
 } from "../controllers/appointmentController.js";
 
 import { protect, authorizeRoles } from "../middleware/authMiddleware.js";
@@ -21,5 +22,8 @@ router.get("/lawyer", protect, authorizeRoles("lawyer"), getLawyerAppointments);
 
 // ✅ Lawyer updates status
 router.put("/:id", protect, authorizeRoles("lawyer"), updateAppointmentStatus);
+
+// ✅ Get single appointment (protected)
+router.get("/:id", protect, getAppointmentById);
 
 export default router;

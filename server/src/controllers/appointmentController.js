@@ -94,3 +94,34 @@ export const updateAppointmentStatus = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// Get single appointment (for video call verification)
+export const getAppointmentById = async (req, res) => {
+  try {
+    const appointment = await Appointment.findById(req.params.id)
+      .populate("user", "name email")
+      .populate({
+        path: "lawyer",
+        populate: {
+          path: "user",
+          select: "name email",
+        },
+      });
+
+    if (!appointment) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    // Security: Only the user or the lawyer involved can view it
+    const isUser = appointment.user._id.toString() === req.user._id.toString();
+    const isLawyer = appointment.lawyer.user._id.toString() === req.user._id.toString();
+
+    if (!isUser && !isLawyer && req.user.role !== 'admin') {
+      return res.status(403).json({ message: "Not authorized to view this appointment" });
+    }
+
+    res.json(appointment);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
