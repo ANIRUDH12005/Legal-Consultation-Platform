@@ -5,7 +5,7 @@ import Lawyer from "../models/Lawyer.js";
 
 export const bookAppointment = async (req, res) => {
   try {
-    const { lawyerId, date, time } = req.body;
+    const { lawyerId, userId, date, time } = req.body;
 
     const lawyer = await Lawyer.findById(lawyerId);
 
@@ -14,12 +14,13 @@ export const bookAppointment = async (req, res) => {
     }
 
     const appointment = await Appointment.create({
-      user: req.user._id,
+      user: userId || req.user._id, // Use userId from body if provided
       lawyer: lawyerId,
       date,
       time,
       fees: lawyer.fees, //  store fees
     });
+
 
     res.status(201).json(appointment);
   } catch (error) {

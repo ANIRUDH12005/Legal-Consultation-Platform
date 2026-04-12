@@ -1,15 +1,15 @@
-import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Star, MapPin, Briefcase, DollarSign } from "lucide-react"
-import type { Lawyer } from "@/lib/data"
 
 interface LawyerCardProps {
   lawyer: any // Using any for now to facilitate backend structure
 }
 
 export function LawyerCard({ lawyer }: LawyerCardProps) {
+  const router = useRouter()
   const name = lawyer.user?.name || lawyer.name || "Unknown Lawyer"
   const rating = lawyer.avgRating || 0
   const totalReviews = lawyer.totalReviews || 0
@@ -59,11 +59,11 @@ export function LawyerCard({ lawyer }: LawyerCardProps) {
             )}
 
             <div className="flex flex-wrap gap-2">
-              <Button asChild>
-                <Link href={`/lawyers/${lawyer._id}`}>View Profile</Link>
+              <Button onClick={() => router.push(`/lawyers/${lawyer._id}`)}>
+                View Profile
               </Button>
-              <Button variant="outline" asChild>
-                <Link href={`/lawyers/${lawyer._id}?book=true`}>Book Appointment</Link>
+              <Button variant="outline" onClick={() => router.push(`/book/${lawyer._id}`)}>
+                Book Appointment
               </Button>
             </div>
           </div>
@@ -72,3 +72,4 @@ export function LawyerCard({ lawyer }: LawyerCardProps) {
     </Card>
   )
 }
+

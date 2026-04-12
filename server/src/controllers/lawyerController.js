@@ -67,3 +67,28 @@ export const getAllLawyers = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// Get Single Lawyer By ID
+export const getLawyerById = async (req, res) => {
+  try {
+    const lawyer = await Lawyer.findById(req.params.id).populate("user", "name email");
+
+    if (!lawyer) {
+      return res.status(404).json({ message: "Lawyer not found" });
+    }
+
+    // Get reviews for this lawyer to calculate rating
+    const reviews = await Review.find({ lawyer: lawyer._id });
+    const avgRating =
+      reviews.reduce((acc, item) => acc + item.rating, 0) /
+      (reviews.length || 1);
+
+    res.json({
+      ...lawyer._doc,
+      avgRating,
+      totalReviews: reviews.length,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

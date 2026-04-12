@@ -8,6 +8,7 @@ import { BookingModal } from "@/components/booking-modal"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { useRouter } from "next/navigation"
 import {
   Star,
   MapPin,
@@ -110,37 +111,29 @@ function LawyerProfileContent({ params }: { params: Promise<{ id: string }> }) {
   const [lawyer, setLawyer] = useState<any | null>(null)
   const [lawyerReviews, setLawyerReviews] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [isBookingOpen, setIsBookingOpen] = useState(showBooking)
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
+
 
   const fetchData = async () => {
     setLoading(true)
+    setError(null)
     try {
-      // Try API first
-      try {
-        const [lawyerRes, reviewsRes] = await Promise.all([
-          API.get(`/lawyers/${resolvedParams.id}`),
-          API.get(`/reviews/${resolvedParams.id}`)
-        ])
-        setLawyer(lawyerRes.data)
-        setLawyerReviews(reviewsRes.data)
-      } catch (apiErr) {
-        console.warn("API failed, falling back to dummy data")
-        // Fallback to dummy data
-        const dummy = dummyLawyers.find(l => l._id === resolvedParams.id)
-        if (dummy) {
-          setLawyer(dummy)
-          setLawyerReviews([]) // No dummy reviews for now
-        } else {
-          throw new Error("Lawyer not found in dummy data")
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching lawyer details:", error)
+      const [lawyerRes, reviewsRes] = await Promise.all([
+        API.get(`/lawyers/${resolvedParams.id}`),
+        API.get(`/reviews/${resolvedParams.id}`)
+      ])
+      setLawyer(lawyerRes.data)
+      setLawyerReviews(reviewsRes.data)
+    } catch (apiErr: any) {
+      console.error("API error:", apiErr)
+      setError(apiErr.response?.data?.message || "Failed to load lawyer details")
       toast.error("Failed to load lawyer details")
     } finally {
       setLoading(false)
     }
   }
+
 
   useEffect(() => {
     fetchData()
@@ -171,7 +164,7 @@ function LawyerProfileContent({ params }: { params: Promise<{ id: string }> }) {
                 <CardContent className="p-6">
                   <div className="flex flex-col gap-6 sm:flex-row">
                     <div className="flex h-32 w-32 shrink-0 items-center justify-center rounded-full bg-primary/10 text-4xl font-bold text-primary">
-                      {lawyerName.split(" ").map((n: string) => n[0]).join("")}
+                      {lawyerName?.split(" ").map((n: string) => n[0]).join("")}
                     </div>
 
                     <div className="flex-1">
@@ -205,7 +198,7 @@ function LawyerProfileContent({ params }: { params: Promise<{ id: string }> }) {
                       </div>
 
                       <div className="flex flex-wrap gap-3">
-                        <Button size="lg" onClick={() => setIsBookingOpen(true)}>
+                        <Button size="lg" onClick={() => router.push(`/book/${resolvedParams.id}`)}>
                           <Calendar className="mr-2 h-4 w-4" />
                           Book Appointment
                         </Button>
@@ -312,7 +305,7 @@ function LawyerProfileContent({ params }: { params: Promise<{ id: string }> }) {
                     <p className="text-sm text-muted-foreground">per session</p>
                   </div>
 
-                  <Button className="w-full" size="lg" onClick={() => setIsBookingOpen(true)}>
+                  <Button className="w-full" size="lg" onClick={() => router.push(`/book/${resolvedParams.id}`)}>
                     Book Now
                   </Button>
                 </CardContent>
@@ -323,11 +316,6 @@ function LawyerProfileContent({ params }: { params: Promise<{ id: string }> }) {
       </main>
       <Footer />
 
-      <BookingModal
-        lawyer={lawyer}
-        isOpen={isBookingOpen}
-        onClose={() => setIsBookingOpen(false)}
-      />
     </div>
   )
 }

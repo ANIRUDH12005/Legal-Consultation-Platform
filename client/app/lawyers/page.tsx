@@ -205,7 +205,7 @@ function LawyersContent() {
                   <CardContent className="flex flex-col items-center justify-center py-12 text-center text-destructive">
                     <p className="mb-2 font-semibold">Error</p>
                     <p>{error}</p>
-                    <Button variant="outline" className="mt-4" onClick={fetchLawyersSimulated}>
+                    <Button variant="outline" className="mt-4" onClick={fetchLawyers}>
                       Try Again
                     </Button>
                   </CardContent>
